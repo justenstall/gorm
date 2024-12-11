@@ -263,6 +263,34 @@ func (schema *Schema) buildPolymorphicRelation(relation *Relationship, field *Fi
 	relation.Type = has
 }
 
+// Replaces all invalid struct field name characters.
+var structFieldNameReplacer = strings.NewReplacer(
+	"[", "",
+	"]", "",
+	".", "",
+	"/", "",
+	"-", "",
+	"*", "",
+	"0", "",
+	"1", "",
+	"2", "",
+	"3", "",
+	"4", "",
+	"5", "",
+	"6", "",
+	"7", "",
+	"8", "",
+	"9", "",
+	"10", "",
+)
+
+func toJoinFieldName(schema *Schema, fieldName string) string {
+	if schema != nil {
+		return cases.Title(language.Und, cases.NoLower).String(structFieldNameReplacer.Replace(schema.Name)) + fieldName
+	}
+	return fieldName
+}
+
 func (schema *Schema) buildMany2ManyRelation(relation *Relationship, field *Field, many2many string) {
 	relation.Type = Many2Many
 
@@ -304,9 +332,9 @@ func (schema *Schema) buildMany2ManyRelation(relation *Relationship, field *Fiel
 	}
 
 	for idx, ownField := range ownForeignFields {
-		joinFieldName := cases.Title(language.Und, cases.NoLower).String(schema.Name) + ownField.Name
+		joinFieldName := toJoinFieldName(schema, ownField.Name)
 		if len(joinForeignKeys) > idx {
-			joinFieldName = cases.Title(language.Und, cases.NoLower).String(joinForeignKeys[idx])
+			joinFieldName = toJoinFieldName(nil, joinForeignKeys[idx])
 		}
 
 		ownFieldsMap[joinFieldName] = ownField
@@ -321,7 +349,7 @@ func (schema *Schema) buildMany2ManyRelation(relation *Relationship, field *Fiel
 	}
 
 	for idx, relField := range refForeignFields {
-		joinFieldName := cases.Title(language.Und, cases.NoLower).String(relation.FieldSchema.Name) + relField.Name
+		joinFieldName := toJoinFieldName(relation.FieldSchema, relField.Name)
 
 		if _, ok := ownFieldsMap[joinFieldName]; ok {
 			if field.Name != relation.FieldSchema.Name {
@@ -349,8 +377,10 @@ func (schema *Schema) buildMany2ManyRelation(relation *Relationship, field *Fiel
 		}
 	}
 
+	fieldName := cases.Title(language.Und, cases.NoLower).String(structFieldNameReplacer.Replace(schema.Name)) + field.Name
+
 	joinTableFields = append(joinTableFields, reflect.StructField{
-		Name: cases.Title(language.Und, cases.NoLower).String(schema.Name) + field.Name,
+		Name: fieldName,
 		Type: schema.ModelType,
 		Tag:  `gorm:"-"`,
 	})
