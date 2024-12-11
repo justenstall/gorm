@@ -377,7 +377,7 @@ func (schema *Schema) buildMany2ManyRelation(relation *Relationship, field *Fiel
 		}
 	}
 
-	fieldName := cases.Title(language.Und, cases.NoLower).String(structFieldNameReplacer.Replace(schema.Name)) + field.Name
+	fieldName := toJoinFieldName(schema, field.Name)
 
 	joinTableFields = append(joinTableFields, reflect.StructField{
 		Name: fieldName,
